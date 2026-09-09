@@ -1,0 +1,12 @@
+H:\VB\imgmove\imgmove\bin\Debug\imgmove.exe.config
+H:\VB\imgmove\imgmove\bin\Debug\imgmove.exe
+H:\VB\imgmove\imgmove\bin\Debug\imgmove.pdb
+H:\VB\imgmove\imgmove\bin\Debug\imgmove.xml
+H:\VB\imgmove\imgmove\obj\Debug\imgmove.vbproj.AssemblyReference.cache
+H:\VB\imgmove\imgmove\obj\Debug\imgmove.Resources.resources
+H:\VB\imgmove\imgmove\obj\Debug\imgmove.vbproj.GenerateResource.cache
+H:\VB\imgmove\imgmove\obj\Debug\imgmove.vbproj.CoreCompileInputs.cache
+H:\VB\imgmove\imgmove\obj\Debug\imgmove.exe
+H:\VB\imgmove\imgmove\obj\Debug\imgmove.xml
+H:\VB\imgmove\imgmove\obj\Debug\imgmove.pdb
+H:\VB\imgmove\imgmove\obj\Debug\imgmove.Form1.resources
