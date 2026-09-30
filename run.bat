@@ -3,7 +3,7 @@
 :0
 
 DEL C:\Users\Public\Desktop\*.* /s /q
-DEL \\info\it0723$\Desktop\*.* /s /q
+DEL C:\Users\tsesuv\Desktop\*.* /s /q
 
 timeout /t 1 /nobreak
 
