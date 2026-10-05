@@ -41,6 +41,8 @@ char renew(fstr *fs);
 char del(fstr *fs);
 char flush(FILE *file, fstr fs);
 
+char flag = 0;
+
 int main(void)
 {	char pwr = 1;
 	char id = 0;
@@ -69,8 +71,20 @@ int main(void)
 
 				break;
 
+			case 8:
+				if(!flush(file, fs))
+					printf("Saved\n");
+
+				else
+					printf("Save error\n");
+
+				break;
+
 			case 9:
-				pwr = 0;
+				if(flag & 1 && !(flag & 2))
+				{	if(remove("seiseki.txt"))
+						printf("File delete error.  Please delete file manually\n");
+				} pwr = 0;
 
 				break;
 
@@ -100,6 +114,16 @@ char mncpy(char *d, char *s, uint n)
 
 fstr fsnew(FILE *file)
 {	fstr fs;
+
+	file = fopen("seiseki.txt", "r");
+	if(!file)
+	{	file = fopen("seiseki.txt", "w");
+		fclose(file);
+
+		flag |= 1;
+		printf("New file\n");
+	} else
+		fclose(file);
 
 	fs.fsize = fsyz(file);
 	fs.fline = flcnt(file);
@@ -169,6 +193,8 @@ char menu(void)
 	printf("2: Add\n");
 	printf("3: Update\n");
 	printf("4: Delete\n");
+	printf("8: Save manually\n");
+	printf("9: Quit program\n");
 
 	printf("Number? ");
 	scanf("%d", &select);
@@ -180,7 +206,9 @@ char show(fstr fs)
 {	printf("___ Record list ___\n");
 
 	for(uint i = 0; i < fs.idx; i++)
-		printf("%d %s %d\n", fs.rec[i].id, fs.rec[i].name, fs.rec[i].p);
+	{	if(strcmp(fs.rec[i].name, " DELETED"))
+			printf("%d %s %d\n", fs.rec[i].id, fs.rec[i].name, fs.rec[i].p);
+	}
 
 	printf("-------------------\n");
 
@@ -206,9 +234,7 @@ char add(fstr *fs)
 			fs->rec = realloc(fs->rec, fs->cap * sizeof(frec));
 		} fs->rec[fs->idx].id = 1 + fs->idx;
 		mncpy(fs->rec[fs->idx].name, newName, 20);
-		fs->rec[fs->idx].p = newP;
-
-		fs->idx++;
+		fs->rec[fs->idx++].p = newP;
 	}
 
 	return 0;
@@ -224,30 +250,34 @@ char del(fstr *fs)
 	printf("Record id you wish to delete? ");
 	scanf("%d", &dId);
 
-	if(dId < 0 || fs->fline < dId)
+	dId--;
+
+	if(dId < 0 || fs->idx < dId)
 	{	printf("Not exist record: %d\n", 1 + dId);
 
 		return 1;
-	} dId++;
-
-	if(!(1 + fs->dp.idx < fs->dp.cap))
+	} if(!(1 + fs->dp.idx < fs->dp.cap))
 	{	fs->dp.cap *= 2;
 		fs->dp.p = realloc(fs->dp.p, fs->dp.cap * sizeof(uint));
-	} fs->dp.p[fs->dp.idx] = dId;
-	mncpy(fs->rec[dId].name, " DELETED\0\0\0\0\0\0\0\0\0\0\0\0", 20);
-
-	fs->dp.idx++;
+	} fs->dp.p[fs->dp.idx++] = dId;
+	mncpy(fs->rec[dId].name, " DELETED\0\0\0\0\0\0\0\0\0\0\0\0", 20);;
 
 	return 0; // TODO: Update struct by overwrite
 }
 
 char flush(FILE *file, fstr fs)
-{	file = fopen("seiseki.txt", "w");
+{	flag |= 2;
+
+	file = fopen("seiseki.txt", "w");
 
 	for(uint i = 0; i < fs.idx; i++)
 	{	fseek(file, 28L * i, SEEK_SET);
 		fprintf(file, "%3d%20s%4d\n", fs.rec[i].id, fs.rec[i].name, fs.rec[i].p);
 	} fclose(file);
+
+	fs.fsize = fsyz(file);
+	fs.fline = flcnt(file);
+
 	return 0;
 }
 
