@@ -3,11 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef unsigned char chr;
 typedef unsigned int uint;
 
 typedef struct
 {	int id;
-	char name[20];
+	chr name[20];
 	int p;
 } frec;
 
@@ -20,32 +21,34 @@ typedef struct
 typedef struct
 {	uint fsize;
 	uint fline;
+
 	uint cap;
 	uint idx;
+
 	dp_t dp;
 	frec *rec;
+
+	chr flag; // new, !never changed, not saved
 } fstr;
 
-char mncpy(char *d, char *s, uint n);
+chr mncpy(chr *d, chr *s, uint n);
 
 uint fsyz(FILE *file);
 uint flcnt(FILE *file);
 
 fstr fsnew(FILE *file);
-char fsfree(fstr *fs);
+chr fsfree(fstr *fs);
 
-char menu(void);
-char show(fstr fs);
-char add(fstr *fs);
-char renew(fstr *fs);
-char del(fstr *fs);
-char flush(FILE *file, fstr fs);
-
-char flag = 0;
+chr menu(void);
+chr show(fstr fs);
+chr add(fstr *fs);
+chr renew(fstr *fs);
+chr del(fstr *fs);
+chr flush(FILE *file, fstr *fs);
 
 int main(void)
-{	char pwr = 1;
-	char id = 0;
+{	chr pwr = 1;
+	chr id = 0;
 	fstr fs;
 
 	FILE *file;
@@ -66,13 +69,18 @@ int main(void)
 
 				break;
 
+			case 3:
+				renew(&fs);
+
+				break;
+
 			case 4:
 				del(&fs);
 
 				break;
 
 			case 8:
-				if(!flush(file, fs))
+				if(!flush(file, &fs))
 					printf("Saved\n");
 
 				else
@@ -81,10 +89,19 @@ int main(void)
 				break;
 
 			case 9:
-				if(flag & 1 && !(flag & 2))
+				if(fs.flag & 1 && !(fs.flag & 6))
 				{	if(remove("seiseki.txt"))
 						printf("File delete error.  Please delete file manually\n");
-				} pwr = 0;
+				} else if(fs.flag & 4)
+				{	chr forced = 'N';
+
+					printf("File changed but not saved, Is it okay to terminate (y/n) ? ");
+					scanf(" %c", &forced);
+
+					if(forced == 'Y' || forced == 'y')
+						pwr = 0;
+				} else
+					pwr = 0;
 
 				break;
 
@@ -105,7 +122,7 @@ int main(void)
 	return 0;
 }
 
-char mncpy(char *d, char *s, uint n)
+chr mncpy(chr *d, chr *s, uint n)
 {	while(n--)
 		*d++ = *s++;
 
@@ -114,6 +131,7 @@ char mncpy(char *d, char *s, uint n)
 
 fstr fsnew(FILE *file)
 {	fstr fs;
+	chr flag = 0;
 
 	file = fopen("seiseki.txt", "r");
 	if(!file)
@@ -136,6 +154,8 @@ fstr fsnew(FILE *file)
 
 	fs.rec = malloc(fs.fsize * sizeof(frec));
 
+	fs.flag = flag;
+
 	file = fopen("seiseki.txt", "r");
 
 	for(uint i = 0; i < fs.fline; i++)
@@ -146,7 +166,7 @@ fstr fsnew(FILE *file)
 	return fs;
 }
 
-char fsfree(fstr *fs)
+chr fsfree(fstr *fs)
 {	free(fs->rec);
 	free(fs->dp.p);
 
@@ -171,11 +191,11 @@ uint fsyz(FILE *file)
 uint flcnt(FILE *file)
 {	uint line = 0;
 	uint s = fsyz(file);
-	char c = 0;
+	chr c = 0;
 
 	file = fopen("seiseki.txt", "r");
 
-	while(c != EOF)
+	while(c != 255)
 	{	c = fgetc(file);
 		if(c == '\n')
 			line++;
@@ -184,7 +204,7 @@ uint flcnt(FILE *file)
 	return line;
 }
 
-char menu(void)
+chr menu(void)
 {	int select = 0;
 
 	printf("*** MENU ***\n");
@@ -202,7 +222,7 @@ char menu(void)
 	return select;
 }
 
-char show(fstr fs)
+chr show(fstr fs)
 {	printf("___ Record list ___\n");
 
 	for(uint i = 0; i < fs.idx; i++)
@@ -215,10 +235,9 @@ char show(fstr fs)
 	return 0;
 }
 
-char add(fstr *fs)
-{	uint i = 0;
-	uint newP;
-	char newName[20];
+chr add(fstr *fs)
+{	uint newP;
+	chr newName[20];
 
 	printf("Name and point? ");
 	scanf("%20s %4d", newName, &newP);
@@ -226,7 +245,7 @@ char add(fstr *fs)
 	if(fs->dp.idx)
 	{	fs->dp.idx--;
 		mncpy(fs->rec[fs->dp.p[fs->dp.idx]].name, newName, 20);
-		fs->rec[fs->dp.idx].p = newP;
+		fs->rec[fs->dp.p[fs->dp.idx]].p = newP;
 		fs->dp.p[fs->dp.idx] = 0;
 	} else
 	{	if(!(1 + fs->idx < fs->cap))
@@ -235,16 +254,37 @@ char add(fstr *fs)
 		} fs->rec[fs->idx].id = 1 + fs->idx;
 		mncpy(fs->rec[fs->idx].name, newName, 20);
 		fs->rec[fs->idx++].p = newP;
-	}
+	} fs->flag |= 4;
 
 	return 0;
 }
 
-char renew(fstr *fs)
-{	return 0; // TODO: Update struct by overwrite
+chr renew(fstr *fs)
+{	uint id = 0;
+	uint newP = 0;
+	chr newName[20];
+
+	printf("Update record id? ");
+	scanf("%d", &id);
+
+	id--;
+
+	if(id < 0 || fs->idx < id)
+	{	printf("Not exist record: %d\n", 1 + id);
+
+		return 1;
+	} printf("New name and point? ");
+	scanf("%20s %d", newName, &newP);
+
+	mncpy(fs->rec[id].name, newName, 20);
+	fs->rec[id].p = newP;
+
+	fs->flag |= 4;
+
+	return 0;
 }
 
-char del(fstr *fs)
+chr del(fstr *fs)
 {	int dId = 0;
 
 	printf("Record id you wish to delete? ");
@@ -260,23 +300,27 @@ char del(fstr *fs)
 	{	fs->dp.cap *= 2;
 		fs->dp.p = realloc(fs->dp.p, fs->dp.cap * sizeof(uint));
 	} fs->dp.p[fs->dp.idx++] = dId;
-	mncpy(fs->rec[dId].name, " DELETED\0\0\0\0\0\0\0\0\0\0\0\0", 20);;
+	mncpy(fs->rec[dId].name, " DELETED\0\0\0\0\0\0\0\0\0\0\0\0", 20);
 
-	return 0; // TODO: Update struct by overwrite
+	fs->flag |= 4;
+
+	return 0;
 }
 
-char flush(FILE *file, fstr fs)
-{	flag |= 2;
+chr flush(FILE *file, fstr *fs)
+{	fs->flag |= 2;
 
 	file = fopen("seiseki.txt", "w");
 
-	for(uint i = 0; i < fs.idx; i++)
+	for(uint i = 0; i < fs->idx; i++)
 	{	fseek(file, 28L * i, SEEK_SET);
-		fprintf(file, "%3d%20s%4d\n", fs.rec[i].id, fs.rec[i].name, fs.rec[i].p);
+		fprintf(file, "%3d%20s%4d\n", fs->rec[i].id, fs->rec[i].name, fs->rec[i].p);
 	} fclose(file);
 
-	fs.fsize = fsyz(file);
-	fs.fline = flcnt(file);
+	fs->fsize = fsyz(file);
+	fs->fline = flcnt(file);
+
+	fs->flag &= (255 - 4);
 
 	return 0;
 }
