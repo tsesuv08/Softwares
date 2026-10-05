@@ -28,15 +28,15 @@ typedef struct
 	dp_t dp;
 	frec *rec;
 
-	chr flag; // new, !never changed, not saved
+	chr flag; // new, changed, not saved
 } fstr;
 
 chr mncpy(chr *d, chr *s, uint n);
 
-uint fsyz(FILE *file);
-uint flcnt(FILE *file);
+uint fsyz(FILE **file);
+uint flcnt(FILE **file);
 
-fstr fsnew(FILE *file);
+fstr fsnew(FILE **file);
 chr fsfree(fstr *fs);
 
 chr menu(void);
@@ -44,7 +44,7 @@ chr show(fstr fs);
 chr add(fstr *fs);
 chr renew(fstr *fs);
 chr del(fstr *fs);
-chr flush(FILE *file, fstr *fs);
+chr flush(FILE **file, fstr *fs);
 
 int main(void)
 {	chr pwr = 1;
@@ -53,7 +53,7 @@ int main(void)
 
 	FILE *file;
 
-	fs = fsnew(file);
+	fs = fsnew(&file);
 
 	while(pwr)
 	{	id = menu();
@@ -80,7 +80,7 @@ int main(void)
 				break;
 
 			case 8:
-				if(!flush(file, &fs))
+				if(!flush(&file, &fs))
 					printf("Saved\n");
 
 				else
@@ -129,19 +129,19 @@ chr mncpy(chr *d, chr *s, uint n)
 	return 0;
 }
 
-fstr fsnew(FILE *file)
+fstr fsnew(FILE **file)
 {	fstr fs;
 	chr flag = 0;
 
-	file = fopen("seiseki.txt", "r");
-	if(!file)
-	{	file = fopen("seiseki.txt", "w");
-		fclose(file);
+	*file = fopen("seiseki.txt", "r");
+	if(!*file)
+	{	*file = fopen("seiseki.txt", "w");
+		fclose(*file);
 
 		flag |= 1;
 		printf("New file\n");
 	} else
-		fclose(file);
+		fclose(*file);
 
 	fs.fsize = fsyz(file);
 	fs.fline = flcnt(file);
@@ -156,12 +156,12 @@ fstr fsnew(FILE *file)
 
 	fs.flag = flag;
 
-	file = fopen("seiseki.txt", "r");
+	*file = fopen("seiseki.txt", "r");
 
 	for(uint i = 0; i < fs.fline; i++)
-	{	fseek(file, 28L * i, SEEK_SET);
-		fscanf(file, "%3d%20s%4d", &fs.rec[i].id, fs.rec[i].name, &fs.rec[i].p);
-	} fclose(file);
+	{	fseek(*file, 28L * i, SEEK_SET);
+		fscanf(*file, "%3d%20s%4d", &fs.rec[i].id, fs.rec[i].name, &fs.rec[i].p);
+	} fclose(*file);
 
 	return fs;
 }
@@ -173,33 +173,33 @@ chr fsfree(fstr *fs)
 	return 0;
 }
 
-uint fsyz(FILE *file)
+uint fsyz(FILE **file)
 {	uint t = 0;
 
-	file = fopen("seiseki.txt", "r");
+	*file = fopen("seiseki.txt", "r");
 
-	fseek(file, 0, SEEK_END);
-	t = ftell(file);
-	fseek(file, 0, SEEK_SET);
-	t -= ftell(file);
+	fseek(*file, 0, SEEK_END);
+	t = ftell(*file);
+	fseek(*file, 0, SEEK_SET);
+	t -= ftell(*file);
 
-	fclose(file);
+	fclose(*file);
 
 	return t;
 }
 
-uint flcnt(FILE *file)
+uint flcnt(FILE **file)
 {	uint line = 0;
 	uint s = fsyz(file);
 	chr c = 0;
 
-	file = fopen("seiseki.txt", "r");
+	*file = fopen("seiseki.txt", "r");
 
 	while(c != 255)
-	{	c = fgetc(file);
+	{	c = fgetc(*file);
 		if(c == '\n')
 			line++;
-	} fclose(file);
+	} fclose(*file);
 
 	return line;
 }
@@ -307,15 +307,15 @@ chr del(fstr *fs)
 	return 0;
 }
 
-chr flush(FILE *file, fstr *fs)
+chr flush(FILE **file, fstr *fs)
 {	fs->flag |= 2;
 
-	file = fopen("seiseki.txt", "w");
+	*file = fopen("seiseki.txt", "w");
 
 	for(uint i = 0; i < fs->idx; i++)
-	{	fseek(file, 28L * i, SEEK_SET);
-		fprintf(file, "%3d%20s%4d\n", fs->rec[i].id, fs->rec[i].name, fs->rec[i].p);
-	} fclose(file);
+	{	fseek(*file, 28L * i, SEEK_SET);
+		fprintf(*file, "%3d%20s%4d\n", fs->rec[i].id, fs->rec[i].name, fs->rec[i].p);
+	} fclose(*file);
 
 	fs->fsize = fsyz(file);
 	fs->fline = flcnt(file);
@@ -324,4 +324,3 @@ chr flush(FILE *file, fstr *fs)
 
 	return 0;
 }
-
