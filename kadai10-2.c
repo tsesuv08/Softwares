@@ -16,7 +16,7 @@ typedef struct
 {	uint *p;
 	uint cap;
 	uint idx;
-} dp_t;
+} dp_t; // Stack方式だからデータの保存箇所の再利用は疎らな場所を使う事になる、速度・実装難度とのトレードオフ
 
 typedef struct
 {	uint fsize;
@@ -134,7 +134,7 @@ chr mncpy(chr *d, chr *s, uint n)
 }
 
 chr range(uint udr, uint ovr, uint chk)
-{	return !(chk < udr || --ovr < chk);
+{	return udr < ++chk && chk < ++ovr;
 }
 
 chr redeploy(chr *s, uint ps)
@@ -170,7 +170,7 @@ fstr fsnew(FILE **file)
 	fs.dp.cap = 1;
 	fs.dp.idx = 0;
 
-	fs.rec = malloc(fs.fsize * sizeof(frec));
+	fs.rec = malloc(fs.cap * sizeof(frec));
 
 	fs.flag = flag;
 
@@ -179,6 +179,13 @@ fstr fsnew(FILE **file)
 	for(uint i = 0; i < fs.fline; i++)
 	{	fseek(*file, 28L * i, SEEK_SET);
 		fscanf(*file, "%3d%20s%4d", &fs.rec[i].id, fs.rec[i].name, &fs.rec[i].p);
+
+		if(!strcmp(fs.rec[i].name, "DELETED"))
+		{	if(!(1 + fs.dp.idx < fs.dp.cap))
+			{	fs.dp.cap *= 2;
+				fs.dp.p = realloc(fs.dp.p, fs.dp.cap * sizeof(uint));
+			} fs.dp.p[fs.dp.idx++] = i;
+		}
 	} fclose(*file);
 
 	return fs;
@@ -244,7 +251,7 @@ chr show(fstr fs)
 {	printf("___ Record list ___\n");
 
 	for(uint i = 0; i < fs.idx; i++)
-	{	if(strcmp(fs.rec[i].name, " DELETED"))
+	{	if(strcmp(fs.rec[i].name, "DELETED"))
 			printf("%d %s %d\n", fs.rec[i].id, fs.rec[i].name, fs.rec[i].p);
 	}
 
@@ -262,8 +269,7 @@ chr add(fstr *fs)
 	redeploy(newName, 20);
 
 	if(fs->dp.idx)
-	{	fs->dp.idx--;
-		mncpy(fs->rec[fs->dp.p[fs->dp.idx]].name, newName, 20);
+	{	mncpy(fs->rec[fs->dp.p[--fs->dp.idx]].name, newName, 20);
 		fs->rec[fs->dp.p[fs->dp.idx]].p = newP;
 		fs->dp.p[fs->dp.idx] = 0;
 	} else
@@ -320,7 +326,7 @@ chr del(fstr *fs)
 	{	fs->dp.cap *= 2;
 		fs->dp.p = realloc(fs->dp.p, fs->dp.cap * sizeof(uint));
 	} fs->dp.p[fs->dp.idx++] = dId;
-	mncpy(fs->rec[dId].name, " DELETED\0\0\0\0\0\0\0\0\0\0\0\0", 20);
+	mncpy(fs->rec[dId].name, "DELETED\0\0\0\0\0\0\0\0\0\0\0\0\0", 20);
 
 	fs->flag |= 4;
 
