@@ -32,6 +32,7 @@ typedef struct
 } fstr;
 
 chr mncpy(chr *d, chr *s, uint n);
+chr range(uint udr, uint ovr, uint chk);
 
 uint fsyz(FILE **file);
 uint flcnt(FILE **file);
@@ -128,6 +129,14 @@ chr mncpy(chr *d, chr *s, uint n)
 
 	return 0;
 }
+
+chr range(uint udr, uint ovr, uint chk)
+{	if(--udr < chk && chk < ovr)
+		return 1;
+
+	return 0;
+}
+		
 
 fstr fsnew(FILE **file)
 {	fstr fs;
@@ -269,7 +278,7 @@ chr renew(fstr *fs)
 
 	id--;
 
-	if(id < 0 || fs->idx < id)
+	if(!range(0, fs->idx, id))
 	{	printf("Not exist record: %d\n", 1 + id);
 
 		return 1;
@@ -292,7 +301,7 @@ chr del(fstr *fs)
 
 	dId--;
 
-	if(dId < 0 || fs->idx < dId)
+	if(!range(0, fs->idx, dId))
 	{	printf("Not exist record: %d\n", 1 + dId);
 
 		return 1;
