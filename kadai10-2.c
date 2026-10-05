@@ -260,7 +260,7 @@ chr add(fstr *fs)
 }
 
 chr renew(fstr *fs)
-{	uint id = 0;
+{	int id = 0;
 	uint newP = 0;
 	chr newName[20];
 
