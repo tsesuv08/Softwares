@@ -107,11 +107,6 @@ int main(void)
 
 				break;
 
-			case 10:
-				printf("[fs] fsize: %d, fline: %d, cap: %d, idx: %d\n[dp] cap: %d, idx: %d\n", fs.fsize, fs.fline, fs.cap, fs.idx, fs.dp.cap, fs.dp.idx);
-
-				break;
-
 			default:
 				printf("Invalid id: %d\n", id);
 
@@ -132,17 +127,14 @@ chr mncpy(chr *d, chr *s, uint n)
 }
 
 chr range(uint udr, uint ovr, uint chk)
-{	if(--udr < chk && chk < ovr)
-		return 1;
-
-	return 0;
+{	return !(chk < udr || --ovr < chk);
 }
 
 chr redeploy(chr *s, uint ps)
 {	while(--ps)
 		s++;
 
-	s = 0;
+	*s = 0;
 
 	return 0;
 }
