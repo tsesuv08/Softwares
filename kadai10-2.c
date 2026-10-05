@@ -33,9 +33,10 @@ typedef struct
 
 chr mncpy(chr *d, chr *s, uint n);
 chr range(uint udr, uint ovr, uint chk);
+chr redeploy(chr *s, uint ps);
 
 uint fsyz(FILE **file);
-uint flcnt(FILE **file);
+uint fll(FILE **file);
 
 fstr fsnew(FILE **file);
 chr fsfree(fstr *fs);
@@ -136,6 +137,15 @@ chr range(uint udr, uint ovr, uint chk)
 
 	return 0;
 }
+
+chr redeploy(chr *s, uint ps)
+{	while(--ps)
+		s++;
+
+	s = 0;
+
+	return 0;
+}
 		
 
 fstr fsnew(FILE **file)
@@ -153,7 +163,7 @@ fstr fsnew(FILE **file)
 		fclose(*file);
 
 	fs.fsize = fsyz(file);
-	fs.fline = flcnt(file);
+	fs.fline = fll(file);
 	fs.cap = 1;
 	fs.idx = fs.fline;
 
@@ -197,7 +207,7 @@ uint fsyz(FILE **file)
 	return t;
 }
 
-uint flcnt(FILE **file)
+uint fll(FILE **file)
 {	uint line = 0;
 	uint s = fsyz(file);
 	chr c = 0;
@@ -250,6 +260,7 @@ chr add(fstr *fs)
 
 	printf("Name and point? ");
 	scanf("%20s %4d", newName, &newP);
+	redeploy(newName, 20);
 
 	if(fs->dp.idx)
 	{	fs->dp.idx--;
@@ -284,6 +295,7 @@ chr renew(fstr *fs)
 		return 1;
 	} printf("New name and point? ");
 	scanf("%20s %d", newName, &newP);
+	redeploy(newName, 20);
 
 	mncpy(fs->rec[id].name, newName, 20);
 	fs->rec[id].p = newP;
@@ -327,7 +339,7 @@ chr flush(FILE **file, fstr *fs)
 	} fclose(*file);
 
 	fs->fsize = fsyz(file);
-	fs->fline = flcnt(file);
+	fs->fline = fll(file);
 
 	fs->flag &= (255 - 4);
 
