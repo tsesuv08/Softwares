@@ -35,6 +35,13 @@ chr mncpy(chr *d, chr *s, uint n);
 chr range(uint udr, uint ovr, uint chk);
 chr redeploy(chr *s, uint ps);
 
+uint lb(uint n)
+{	uint k = 0;
+	while(n >> ++k);
+
+	return --k;
+}
+
 uint fsyz(FILE **file);
 uint fll(FILE **file);
 
@@ -156,7 +163,7 @@ fstr fsnew(FILE **file)
 
 	fs.fsize = fsyz(file);
 	fs.fline = fll(file);
-	fs.cap = 1;
+	fs.cap = 1 << lb(fs.fsize);
 	fs.idx = fs.fline;
 
 	fs.dp.p = malloc(sizeof(uint));
