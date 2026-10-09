@@ -35,12 +35,7 @@ chr mncpy(chr *d, chr *s, uint n);
 chr range(uint udr, uint ovr, uint chk);
 chr redeploy(chr *s, uint ps);
 
-uint lb(uint n)
-{	uint k = 0;
-	while(n >> ++k);
-
-	return --k;
-}
+uint lb(uint n);
 
 uint fsyz(FILE **file);
 uint fll(FILE **file);
@@ -63,8 +58,18 @@ int main(void)
 	FILE *file;
 
 	fs = fsnew(&file);
+	if(fs.flag & 128) // fsnew: error
+	{	if(fs.flag == 131) // can allocate fs.dp.p, but can't allocate fs.rec
+			free(fs.dp.p);
 
-	while(pwr)
+		else if(fs.flag == 132) // can allocate fs.rec and fs.dp.p, but can't open file
+			fsfree(&fs);
+
+		else if(fs.flag == 133) // can allocate fs.rec and fs.dp.p, but can't realloc fs.dp.p
+			free(fs.rec);
+
+		return fs.flag - 127; // return code using fsnew error code
+	} while(pwr)
 	{	id = menu();
 
 		switch(id)
@@ -93,7 +98,7 @@ int main(void)
 					printf("Saved\n");
 
 				else
-					printf("Save error\n");
+					printf("Save error\n"); // save error don't return main
 
 				break;
 
@@ -102,7 +107,7 @@ int main(void)
 				{	if(remove("seiseki.txt"))
 						printf("File delete error.  Please delete file manually\n");
 
-					pwr = 0;
+						pwr = 0;
 				} else if(fs.flag & 4)
 				{	chr forced = 'N';
 
@@ -112,7 +117,7 @@ int main(void)
 					if(forced == 'Y' || forced == 'y')
 					{	pwr = 0;
 
-						if(fs.flag & 1)
+					if(fs.flag & 1)
 						{	if(remove("seiseki.txt"))
 								printf("File delete error.  Please delete file manually\n");
 						}
@@ -153,16 +158,29 @@ chr redeploy(chr *s, uint ps)
 
 	return 0;
 }
+
+uint lb(uint n)
+{	uint k = 0;
+	while(n >> ++k);
+
+	return --k;
+}
 		
 
 fstr fsnew(FILE **file)
 {	fstr fs;
+	fstr err;
 	chr flag = 0;
 
 	*file = fopen("seiseki.txt", "r");
 	if(!*file)
 	{	*file = fopen("seiseki.txt", "w");
-		fclose(*file);
+		if(!file)
+		{	printf("Can't open file\n");
+			err.flag |= 128;
+
+			return err;
+		} fclose(*file);
 
 		flag |= 1;
 		printf("New file\n");
@@ -171,27 +189,53 @@ fstr fsnew(FILE **file)
 
 	fs.fsize = fsyz(file);
 	fs.fline = fll(file);
-	fs.cap = 1 << lb(fs.fsize);
+
+	if(fs.fsize == (uint)-1 || fs.fline == (uint)-1)
+	{	err.flag |= 129;
+
+		return err;
+	} fs.cap = 1 << lb(fs.fsize);
 	fs.idx = fs.fline;
 
 	fs.dp.p = malloc(sizeof(uint));
-	fs.dp.cap = 1;
+	if(!fs.dp.p)
+	{	printf("Allocate error\n");
+		err.flag |= 130;
+
+		return err;
+	} fs.dp.cap = 1;
 	fs.dp.idx = 0;
 
 	fs.rec = malloc(fs.cap * sizeof(frec));
+	if(!fs.rec)
+	{	printf("Allocate error\n");
+		err.flag |= 131;
 
-	fs.flag = flag;
+		return err;
+	} fs.flag = flag;
 
 	*file = fopen("seiseki.txt", "r");
+	if(!*file)
+	{	printf("Can't open file\n");
+		err.flag |= 132;
 
-	for(uint i = 0; i < fs.fline; i++)
+		return err;
+	} for(uint i = 0; i < fs.fline; i++)
 	{	fseek(*file, 28L * i, SEEK_SET);
 		fscanf(*file, "%3d%20s%4d", &fs.rec[i].id, fs.rec[i].name, &fs.rec[i].p);
 
 		if(!strcmp(fs.rec[i].name, "DELETED\0\0\0\0\0\0\0\0\0\0\0\0\0"))
 		{	if(!(1 + fs.dp.idx < fs.dp.cap))
 			{	fs.dp.cap *= 2;
-				fs.dp.p = realloc(fs.dp.p, fs.dp.cap * sizeof(uint));
+
+				fstr tmp;
+				tmp.dp.p = realloc(fs.dp.p, fs.dp.cap * sizeof(uint));
+				if(!tmp.dp.p)
+				{	printf("Allocate error\n");
+					err.flag |= 133;
+
+					return err;
+				} fs.dp.p = tmp.dp.p;
 			} fs.dp.p[fs.dp.idx++] = i;
 		}
 	} fclose(*file);
@@ -210,8 +254,11 @@ uint fsyz(FILE **file)
 {	uint t = 0;
 
 	*file = fopen("seiseki.txt", "r");
+	if(!*file)
+	{	printf("Can't open file\n");
 
-	fseek(*file, 0, SEEK_END);
+		return -1;
+	} fseek(*file, 0, SEEK_END);
 	t = ftell(*file);
 	fseek(*file, 0, SEEK_SET);
 	t -= ftell(*file);
@@ -226,9 +273,15 @@ uint fll(FILE **file)
 	uint s = fsyz(file);
 	chr c = 0;
 
-	*file = fopen("seiseki.txt", "r");
+	if(s == (uint)-1)
+		return -1;
 
-	while(c != 255)
+	*file = fopen("seiseki.txt", "r");
+	if(!*file)
+	{	printf("Can't open file\n");
+
+		return -2;
+	} while(c != 255)
 	{	c = fgetc(*file);
 		if(c == '\n')
 			line++;
@@ -283,7 +336,13 @@ chr add(fstr *fs)
 	} else
 	{	if(!(1 + fs->idx < fs->cap))
 		{	fs->cap *= 2;
-			fs->rec = realloc(fs->rec, fs->cap * sizeof(frec));
+			fstr tmp;
+			tmp.rec = realloc(fs->rec, fs->cap * sizeof(frec));
+			if(!tmp.rec)
+			{	printf("Allocate error\n");
+
+				return 1;
+			} fs->rec = tmp.rec;
 		} fs->rec[fs->idx].id = 1 + fs->idx;
 		mncpy(fs->rec[fs->idx].name, newName, 20);
 		fs->rec[fs->idx++].p = newP;
@@ -330,13 +389,15 @@ chr del(fstr *fs)
 	{	printf("Not exist record: %d\n", 1 + dId);
 
 		return 1;
-	} else if(!strcmp(fs->rec[dId].name, "DELETED\0\0\0\0\0\0\0\0\0\0\0\0\0"))
-	{	printf("Record was deleted: %d\n", 1 + dId);
-	
-		return 2;
 	} if(!(1 + fs->dp.idx < fs->dp.cap))
 	{	fs->dp.cap *= 2;
-		fs->dp.p = realloc(fs->dp.p, fs->dp.cap * sizeof(uint));
+		fstr tmp;
+		tmp.dp.p = realloc(fs->dp.p, fs->dp.cap * sizeof(uint));
+		if(!tmp.dp.p)
+		{	printf("Allocate error\n");
+
+			return 2;
+		} fs->dp.p = tmp.dp.p;
 	} fs->dp.p[fs->dp.idx++] = dId;
 	mncpy(fs->rec[dId].name, "DELETED\0\0\0\0\0\0\0\0\0\0\0\0\0", 20);
 
@@ -349,14 +410,23 @@ chr flush(FILE **file, fstr *fs)
 {	fs->flag |= 2;
 
 	*file = fopen("seiseki.txt", "w");
+	if(!*file)
+	{	printf("Can't open file\n");
 
-	for(uint i = 0; i < fs->idx; i++)
+		return 1;
+	} for(uint i = 0; i < fs->idx; i++)
 	{	fseek(*file, 28L * i, SEEK_SET);
 		fprintf(*file, "%3d%20s%4d\n", fs->rec[i].id, fs->rec[i].name, fs->rec[i].p);
 	} fclose(*file);
 
 	fs->fsize = fsyz(file);
 	fs->fline = fll(file);
+
+	if(fs->fsize == (uint)-1 || fs->fline == (uint)-2)
+		return 2;
+
+	if(fs->fline == (uint)-1)
+		return 3;
 
 	fs->flag &= (255 - 4);
 
