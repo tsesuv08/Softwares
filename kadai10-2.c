@@ -108,7 +108,13 @@ int main(void)
 					scanf(" %c", &forced);
 
 					if(forced == 'Y' || forced == 'y')
-						pwr = 0;
+					{	pwr = 0;
+
+						if(fs.flag & 1)
+						{	if(remove("seiseki.txt"))
+								printf("File delete error.  Please delete file manually\n");
+						}
+					}
 				} else
 					pwr = 0;
 
