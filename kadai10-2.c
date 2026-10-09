@@ -101,6 +101,8 @@ int main(void)
 				if(fs.flag & 1 && !(fs.flag & 6))
 				{	if(remove("seiseki.txt"))
 						printf("File delete error.  Please delete file manually\n");
+
+					pwr = 0;
 				} else if(fs.flag & 4)
 				{	chr forced = 'N';
 
