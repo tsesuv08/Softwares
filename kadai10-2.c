@@ -180,7 +180,7 @@ fstr fsnew(FILE **file)
 	{	fseek(*file, 28L * i, SEEK_SET);
 		fscanf(*file, "%3d%20s%4d", &fs.rec[i].id, fs.rec[i].name, &fs.rec[i].p);
 
-		if(!strcmp(fs.rec[i].name, "DELETED"))
+		if(!strcmp(fs.rec[i].name, "DELETED\0\0\0\0\0\0\0\0\0\0\0\0\0"))
 		{	if(!(1 + fs.dp.idx < fs.dp.cap))
 			{	fs.dp.cap *= 2;
 				fs.dp.p = realloc(fs.dp.p, fs.dp.cap * sizeof(uint));
@@ -251,7 +251,7 @@ chr show(fstr fs)
 {	printf("___ Record list ___\n");
 
 	for(uint i = 0; i < fs.idx; i++)
-	{	if(strcmp(fs.rec[i].name, "DELETED"))
+	{	if(strcmp(fs.rec[i].name, "DELETED\0\0\0\0\0\0\0\0\0\0\0\0\0"))
 			printf("%d %s %d\n", fs.rec[i].id, fs.rec[i].name, fs.rec[i].p);
 	}
 
@@ -322,6 +322,10 @@ chr del(fstr *fs)
 	{	printf("Not exist record: %d\n", 1 + dId);
 
 		return 1;
+	} else if(!strcmp(fs->rec[dId].name, "DELETED\0\0\0\0\0\0\0\0\0\0\0\0\0"))
+	{	printf("Record was deleted: %d\n", 1 + dId);
+	
+		return 2;
 	} if(!(1 + fs->dp.idx < fs->dp.cap))
 	{	fs->dp.cap *= 2;
 		fs->dp.p = realloc(fs->dp.p, fs->dp.cap * sizeof(uint));
