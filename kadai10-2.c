@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+////////////////////////////////////////////////////////
+
 typedef unsigned char chr;
 typedef unsigned int uint;
 
@@ -37,6 +39,8 @@ typedef struct
 	chr flag; // new, changed, not saved
 } fstr;
 
+////////////////////////////////////////////////////////
+
 chr mncpy(chr *d, chr *s, uint n);
 chr range(uint udr, uint ovr, uint chk);
 chr redeploy(chr *s, uint ps);
@@ -56,6 +60,8 @@ chr add(fstr *fs);
 chr renew(fstr *fs);
 chr del(fstr *fs);
 chr flush(chr *name, fstr *fs);
+
+////////////////////////////////////////////////////////
 
 int main(uint ac, chr **av)
 {	chr pwr = 1;
