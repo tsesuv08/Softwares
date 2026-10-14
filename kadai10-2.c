@@ -430,7 +430,7 @@ chr show(fstr fs)
 	} printf("___ Record list ___\n");
 
 	for(uint i = 0; i < fs.idx; i++)
-	{	if(strncmp(fs.rec[i].name, "DELETED\0\0\0\0\0\0\0\0\0\0\0\0\0", 20))
+	{	if(strncmp(fs.rec[i].name, " DELETED\0\0\0\0\0\0\0\0\0\0\0\0", 20))
 			printf("%d %s %d\n", fs.rec[i].id, fs.rec[i].name, fs.rec[i].p);
 	} printf("-------------------\n");
 
