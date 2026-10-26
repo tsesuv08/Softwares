@@ -1,6 +1,6 @@
 /* Record manager */
 /* Start date: 2026/10/05 */
-/* Last date: 2026/10/13 */
+/* Last date: 2026/10/26 */
 /* Created by TSesuv Xanuc Notsel */
 
 #include <stdio.h>
@@ -20,8 +20,8 @@ typedef struct
 
 typedef struct
 {	uint *p;
-	uint cap;
 	uint idx;
+	uint cap;
 } dp_t; // Stack方式だからデータの保存箇所の再利用は疎らな場所を使う事になる、速度・実装難度とのトレードオフ
 // 只まぁ無駄に容量を食うと言う事はし無いから ...
 // (先生の実装意図 ... DELETEDは再利用し無い ... よりかは ... )
@@ -30,11 +30,11 @@ typedef struct
 {	uint fsize;
 	uint fline;
 
-	uint cap;
+	frec *rec;
 	uint idx;
+	uint cap;
 
 	dp_t dp;
-	frec *rec;
 
 	chr flag; // new, changed, not saved
 } fstr;
@@ -43,9 +43,9 @@ typedef struct
 
 chr mncpy(chr *d, chr *s, uint n);
 chr range(uint udr, uint ovr, uint chk);
-chr redeploy(chr *s, uint ps);
+chr redep(chr *s, uint ps);
 
-uint lb(uint n);
+uint lbii(uint n);
 
 chr fstate(chr *name);
 uint fsize(chr *name);
@@ -79,12 +79,12 @@ int main(uint ac, chr **av)
 	if(fs.flag & 128) // fsnew: error
 	{	switch(fs.flag)
 		{	case 128: // file status error
-				printf("recmgr: main: fsnew: ERROR: Can't open file\n");
+				printf("recmgr: main: fsnew: fstate: ERROR: Can't open file\n");
 
 				break;
 
 			case 129:
-				printf("recmgr: main: fsnew: fsyz: ERROR: Can't open file\n");
+				printf("recmgr: main: fsnew: fsize: ERROR: Can't open file\n");
 
 				break;
 
@@ -103,7 +103,7 @@ int main(uint ac, chr **av)
 
 				break;
 
-			case 133: // can allocate fs.dp.p, but can't allocate fs.rec
+			case 133: // can allocate fs.dp.p, but can't allocate fs->rec
 				printf("recmgr: main: fsnew: ERROR: Allocate error\n");
 				free(fs.dp.p);
 
@@ -116,7 +116,7 @@ int main(uint ac, chr **av)
 				break;
 
 			case 135: // can allocate fs.rec and fs.dp.p, but can't realloc fs.dp.p
-				printf("recmgr: main: fsnew: ERROR: Can't open file\n");
+				printf("recmgr: main: fsnew: ERROR: Allocate error\n");
 				free(fs.rec);
 
 				break;
@@ -157,7 +157,7 @@ int main(uint ac, chr **av)
 						break;
 
 					case 2:
-						printf("recmgr: main: renew: ERROR: Not exist record: %d\n", 1 + fs.fsize);
+						printf("recmgr: main: renew: ERROR: Unexist record: %d\n", 1 + fs.fsize);
 						fs.fsize = fsize(name);
 
 						break;
@@ -174,7 +174,7 @@ int main(uint ac, chr **av)
 						break;
 
 					case 2:
-						printf("recmgr: main: del: ERROR: Not exist record: %d\n", 1 + fs.fsize);
+						printf("recmgr: main: del: ERROR: Unexist record: %d\n", 1 + fs.fsize);
 						fs.fsize = fsize(name);
 
 						break;
@@ -247,7 +247,7 @@ chr redeploy(chr *s, uint ps)
 	return 0;
 }
 
-uint lb(uint n)
+uint lbii(uint n)
 {	uint k = 0;
 
 	while(n >> ++k);
